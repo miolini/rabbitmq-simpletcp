@@ -20,3 +20,10 @@ Usage of ./rabbitmq-simpletcp:
   -exchange="x-simpletcp": send all messages to this rabbitmq exchange
   -uri="amqp://guest:guest@localhost:5672/": rabbitmq server amqp uri
 '''
+
+## Support
+
+If you have any questions, please, send email to me: mio@volmy.com.
+
+
+Enjoy!
