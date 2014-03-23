@@ -19,6 +19,7 @@ Usage of ./rabbitmq-simpletcp:
   -addr="localhost:12010": tcp listen addr host:port
   -exchange="x-simpletcp": send all messages to this rabbitmq exchange
   -uri="amqp://guest:guest@localhost:5672/": rabbitmq server amqp uri
+  -gzip=false: enable gzip decompress
 ```
 
 ## Support
