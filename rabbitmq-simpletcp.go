@@ -3,15 +3,34 @@ package main
 import "log"
 import "flag"
 import "net"
+import "io"
 import "bufio"
 import "time"
 import "github.com/streadway/amqp"
+import "compress/gzip"
 
 const (
     RECV_BUF_LEN = 2048
 )
 
-func listenTCP(addr string, dataChan chan string) {
+func readClient(reader io.Reader, dataChan chan string, compress bool) {
+    var scanner *bufio.Scanner
+    if compress {
+        gzipReader, err := gzip.NewReader(reader)
+        if err != nil {
+            log.Printf("gzip error: %s", err)
+            return
+        }
+        scanner = bufio.NewScanner(gzipReader)
+    } else {
+        scanner = bufio.NewScanner(reader)
+    }
+    for scanner.Scan() {
+        dataChan <- scanner.Text()
+    }
+}
+
+func listenTCP(addr string, dataChan chan string, compress bool) {
     listener, err := net.Listen("tcp", addr)
     if err != nil {
         log.Printf("error: %s", err)
@@ -24,14 +43,7 @@ func listenTCP(addr string, dataChan chan string) {
             return
         }
         log.Printf("new connection")
-        go func(conn net.Conn) {
-            defer conn.Close()
-            scanner := bufio.NewScanner(conn)
-            for scanner.Scan() {
-                line := scanner.Text()
-                dataChan <- line
-            }
-        }(conn)
+        go readClient(conn, dataChan, compress)
     }
 }
 
@@ -61,6 +73,25 @@ func startPublisher(uri string, exchange string, dataChan chan string) {
     }
 }
 
+func startTcpSender(addr string, copyChan chan string) {
+    client, err := net.Dial("tcp", addr)
+    if err != nil {
+        log.Printf("error: %s", err)
+        return
+    }
+    defer client.Close()
+    for {
+        select {
+        case data := <- copyChan:
+            _, err := io.WriteString(client, data + "\r\n")
+            if err != nil {
+                log.Printf("can't write to %s: %s", addr, err)
+                return
+            }
+        }
+    }
+}
+
 func main() {
     log.Printf("rabbitmq-simpletcp transmitter")
 
@@ -68,11 +99,13 @@ func main() {
         uri string
         exchange string
         addr string
+        gzip bool
     )
 
     flag.StringVar(&addr, "addr", "localhost:12010", "tcp listen addr host:port")
     flag.StringVar(&uri, "uri", "amqp://guest:guest@localhost:5672/", "rabbitmq server amqp uri")
     flag.StringVar(&exchange, "exchange", "x-simpletcp", "send all messages to this rabbitmq exchange")
+    flag.BoolVar(&gzip, "gzip" , false, "enable gzip decompress");
     flag.Parse()
 
     log.Printf("addr:      %s", addr)
@@ -84,7 +117,7 @@ func main() {
     go func() {
         for {
             log.Printf("start tcp listener")
-            listenTCP(addr, dataChan)
+            listenTCP(addr, dataChan, gzip)
             time.Sleep(time.Second)
         }
     }()
