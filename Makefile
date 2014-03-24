@@ -1,5 +1,8 @@
-all:
-	go build -o rabbitmq-simpletcp rabbitmq-simpletcp.go
+all: build
 
+build:
+	go build -o rabbitmq-simpletcp rabbitmq-simpletcp.go
+clean:
+	rm -rf rabbitmq-simpletcp
 depends:
-	go get github.com/streadway/amqp
+	go get -d

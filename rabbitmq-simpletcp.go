@@ -7,6 +7,7 @@ import "io"
 import "bufio"
 import "time"
 import "github.com/streadway/amqp"
+import "github.com/miolini/godaemon"
 import "compress/gzip"
 
 const (
@@ -100,17 +101,22 @@ func main() {
         exchange string
         addr string
         gzip bool
+        pidFile string
     )
 
     flag.StringVar(&addr, "addr", "localhost:12010", "tcp listen addr host:port")
     flag.StringVar(&uri, "uri", "amqp://guest:guest@localhost:5672/", "rabbitmq server amqp uri")
     flag.StringVar(&exchange, "exchange", "x-simpletcp", "send all messages to this rabbitmq exchange")
-    flag.BoolVar(&gzip, "gzip" , false, "enable gzip decompress");
+    flag.BoolVar(&gzip, "gzip" , false, "enable gzip decompress")
+    flag.StringVar(&pidFile, "pidfile", "", "path to pid file")
     flag.Parse()
 
     log.Printf("addr:      %s", addr)
     log.Printf("uri:       %s", uri)
     log.Printf("exchange:  %s", exchange)
+    log.Printf("pidfile:   %s", pidFile)
+
+    godaemon.WritePidFile(pidFile)
 
     dataChan := make(chan string, 1000)
 
