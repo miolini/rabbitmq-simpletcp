@@ -67,7 +67,7 @@ func startPublisher(uri string, exchange string, dataChan chan string) {
                 err := queueChan.Publish(exchange, "", false, false, msg)
                 if err != nil {
                     log.Printf("error: %s", err)
-                    break
+                    return
                 }
         }
     }
